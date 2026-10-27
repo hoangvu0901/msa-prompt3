@@ -1,0 +1,359 @@
+name: msa-prompt3
+
+services:
+
+  shipment-consumer:
+    build:
+      context: .
+      dockerfile: services/shipment/Dockerfile
+    image: msa-prompt3-shipment:1.0
+    command: ["node", "src/shipment-consumer.js"]
+    restart: unless-stopped
+    stop_grace_period: 25s
+    environment:
+      NODE_ENV: production
+      MONGO_ADDRESS: mongodb://shipment-db:27017
+      MONGO_DATABASE: shipment_db
+      MONGO_USER: shipment_user
+      MONGO_PASSWORD: ${SHIPMENT_APP_PASSWORD:?Missing SHIPMENT_APP_PASSWORD}
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_GROUP_ID: shipment-order-created-v1
+      ORDER_CREATED_TOPIC: order-created
+    depends_on:
+      shipment-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  shipment-service:
+    build:
+      context: .
+      dockerfile: services/shipment/Dockerfile
+    image: msa-prompt3-shipment:1.0
+    environment:
+      NODE_ENV: production
+      MONGO_ADDRESS: mongodb://shipment-db:27017
+      MONGO_DATABASE: shipment_db
+      MONGO_USER: shipment_user
+      MONGO_PASSWORD: ${SHIPMENT_APP_PASSWORD:?Missing SHIPMENT_APP_PASSWORD}
+    depends_on:
+      shipment-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "src/healthcheck.js"]
+      interval: 10s
+      timeout: 7s
+      retries: 5
+      start_period: 15s
+
+  outbox-worker:
+    build:
+      context: .
+      dockerfile: services/order/Dockerfile
+    image: msa-prompt3-order:1.0
+    command: ["node", "src/outbox-worker.js"]
+    restart: unless-stopped
+    stop_grace_period: 25s
+    environment:
+      NODE_ENV: production
+      PGHOST: order-db
+      PGPORT: 5432
+      PGDATABASE: order_db
+      PGUSER: order_user
+      PGPASSWORD: ${ORDER_DB_PASSWORD:?Missing ORDER_DB_PASSWORD}
+      KAFKA_BROKERS: kafka:9092
+      ORDER_CREATED_TOPIC: order-created
+    depends_on:
+      order-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  order-worker:
+    build:
+      context: .
+      dockerfile: services/order/Dockerfile
+    image: msa-prompt3-order:1.0
+    command: ["node", "src/order-worker.js"]
+    restart: unless-stopped
+    stop_grace_period: 25s
+    environment:
+      NODE_ENV: production
+      PGHOST: order-db
+      PGPORT: 5432
+      PGDATABASE: order_db
+      PGUSER: order_user
+      PGPASSWORD: ${ORDER_DB_PASSWORD:?Missing ORDER_DB_PASSWORD}
+      CUSTOMER_GRPC_ADDRESS: customer-service:50052
+      PRODUCT_GRPC_ADDRESS: product-service:50053
+    depends_on:
+      order-db:
+        condition: service_healthy
+      customer-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+
+  order-service:
+    build:
+      context: .
+      dockerfile: services/order/Dockerfile
+    image: msa-prompt3-order:1.0
+    environment:
+      NODE_ENV: production
+      PGHOST: order-db
+      PGPORT: "5432"
+      PGDATABASE: order_db
+      PGUSER: order_user
+      PGPASSWORD: ${ORDER_DB_PASSWORD:?Missing ORDER_DB_PASSWORD}
+    depends_on:
+      order-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "src/healthcheck.js"]
+      interval: 10s
+      timeout: 7s
+      retries: 5
+      start_period: 15s
+
+  product-service:
+    build:
+      context: .
+      dockerfile: services/product/Dockerfile
+    image: msa-prompt3-product:1.0
+    environment:
+      NODE_ENV: production
+      MONGO_ADDRESS: mongodb://product-db:27017
+      MONGO_DATABASE: product_db
+      MONGO_USER: product_user
+      MONGO_PASSWORD: ${PRODUCT_APP_PASSWORD:?Missing PRODUCT_APP_PASSWORD}
+    depends_on:
+      product-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "src/healthcheck.js"]
+      interval: 10s
+      timeout: 7s
+      retries: 5
+      start_period: 15s
+
+  customer-service:
+    build:
+      context: .
+      dockerfile: services/customer/Dockerfile
+    image: msa-prompt3-customer:1.0
+    environment:
+      NODE_ENV: production
+      PGHOST: customer-db
+      PGPORT: "5432"
+      PGDATABASE: customer_db
+      PGUSER: customer_user
+      PGPASSWORD: ${CUSTOMER_DB_PASSWORD:?Missing CUSTOMER_DB_PASSWORD}
+    depends_on:
+      customer-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "src/healthcheck.js"]
+      interval: 10s
+      timeout: 7s
+      retries: 5
+      start_period: 15s
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    image: msa-prompt3-gateway:1.0
+    environment:
+      ORDER_GRPC_ADDRESS: order-service:50054
+      SHIPMENT_GRPC_ADDRESS: shipment-service:50055
+      NODE_ENV: production
+      PORT: "3002"
+      AUTH_GRPC_ADDRESS: auth-service:50051
+      PRODUCT_GRPC_ADDRESS: product-service:50053
+      CUSTOMER_GRPC_ADDRESS: customer-service:50052
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:?Missing JWT_SECRET}
+    ports:
+      - "127.0.0.1:3002:3002"
+    depends_on:
+      order-service:
+        condition: service_healthy
+      shipment-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+      customer-service:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "src/healthcheck.js"]
+      interval: 10s
+      timeout: 7s
+      retries: 5
+      start_period: 15s
+
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    image: msa-prompt3-auth:1.0
+    environment:
+      NODE_ENV: production
+      GRPC_PORT: "50051"
+      PGHOST: auth-db
+      PGPORT: "5432"
+      PGDATABASE: auth_db
+      PGUSER: auth_user
+      PGPASSWORD: ${AUTH_DB_PASSWORD:?Missing AUTH_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Missing JWT_SECRET}
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "src/healthcheck.js"]
+      interval: 10s
+      timeout: 7s
+      retries: 5
+      start_period: 15s
+
+  auth-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:?Missing AUTH_DB_PASSWORD}
+    volumes:
+      - auth-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  customer-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: customer_db
+      POSTGRES_USER: customer_user
+      POSTGRES_PASSWORD: ${CUSTOMER_DB_PASSWORD:?Missing CUSTOMER_DB_PASSWORD}
+    volumes:
+      - customer-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U customer_user -d customer_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  order-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: order_user
+      POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD:?Missing ORDER_DB_PASSWORD}
+    volumes:
+      - order-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U order_user -d order_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  product-db:
+    image: mongo:8.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${PRODUCT_MONGO_USER:?Missing PRODUCT_MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${PRODUCT_MONGO_PASSWORD:?Missing PRODUCT_MONGO_PASSWORD}
+    volumes:
+      - product-data:/data/db
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          mongosh --quiet
+          --username "$$MONGO_INITDB_ROOT_USERNAME"
+          --password "$$MONGO_INITDB_ROOT_PASSWORD"
+          --authenticationDatabase admin
+          --eval 'quit(db.adminCommand({ping: 1}).ok === 1 ? 0 : 1)'
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  shipment-db:
+    image: mongo:8.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${SHIPMENT_MONGO_USER:?Missing SHIPMENT_MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${SHIPMENT_MONGO_PASSWORD:?Missing SHIPMENT_MONGO_PASSWORD}
+    volumes:
+      - shipment-data:/data/db
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          mongosh --quiet
+          --username "$$MONGO_INITDB_ROOT_USERNAME"
+          --password "$$MONGO_INITDB_ROOT_PASSWORD"
+          --authenticationDatabase admin
+          --eval 'quit(db.adminCommand({ping: 1}).ok === 1 ? 0 : 1)'
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  kafka:
+    image: apache/kafka:3.9.1
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list > /dev/null 2>&1
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 40s
+volumes:
+  auth-data:
+  customer-data:
+  order-data:
+  product-data:
+  shipment-data:
+  redis-data:
+  kafka-data:

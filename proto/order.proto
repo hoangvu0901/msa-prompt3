@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package order;
+
+service OrderService {
+  rpc HealthCheck (Empty) returns (HealthResponse);
+  rpc CreateOrder (CreateOrderRequest) returns (CreateOrderResponse);
+  rpc GetOrder (GetOrderRequest) returns (OrderResponse);
+  rpc ListOrders (ListOrdersRequest) returns (ListOrdersResponse);
+}
+
+message Empty {}
+
+message HealthResponse {
+  string status = 1;
+  string database = 2;
+}
+
+message Actor {
+  int32 uid = 1;
+  string role = 2;
+}
+
+message OrderItem {
+  int32 pid = 1;
+  int32 qty = 2;
+}
+
+message OrderDetail {
+  int32 pid = 1;
+  int32 qty = 2;
+  string unit_price = 3;
+}
+
+message CreateOrderRequest {
+  Actor actor = 1;
+  string requestId = 2;
+  repeated OrderItem items = 3;
+}
+
+message CreateOrderResponse {
+  bool created = 1;
+  OrderResponse order = 2;
+}
+
+message GetOrderRequest {
+  Actor actor = 1;
+  int32 oid = 2;
+}
+
+message ListOrdersRequest {
+  Actor actor = 1;
+  int32 page = 2;
+  int32 pageSize = 3;
+}
+
+message ListOrdersResponse {
+  repeated OrderResponse items = 1;
+  int32 page = 2;
+  int32 pageSize = 3;
+  int32 total = 4;
+}
+
+message OrderResponse {
+  int32 oid = 1;
+  int32 uid = 2;
+  string requestId = 3;
+  string status = 4;
+  int32 membership_score = 5;
+  string discount_rate = 6;
+  string subtotal = 7;
+  string discount = 8;
+  string total_amount = 9;
+  repeated OrderItem items = 10;
+  repeated OrderDetail details = 11;
+  string created_at = 12;
+  string updated_at = 13;
+  bool stock_committed = 14;
+}

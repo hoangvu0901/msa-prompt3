@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package product;
+
+service ProductService {
+  rpc GetStocks (StocksRequest) returns (StocksResponse);
+  rpc CommitStock (StockRequest) returns (StockResponse);
+  rpc ReserveStock (StockRequest) returns (StockResponse);
+  rpc ReleaseStock (StockRequest) returns (StockResponse);
+  rpc HealthCheck (Empty) returns (HealthResponse);
+  rpc CreateProduct (ProductInput) returns (ProductResponse);
+  rpc GetProduct (ProductId) returns (ProductResponse);
+  rpc ListProducts (ListProductsRequest) returns (ListProductsResponse);
+  rpc UpdateProduct (UpdateProductRequest) returns (ProductResponse);
+  rpc DeleteProduct (ProductId) returns (DeleteProductResponse);
+}
+
+message Empty {}
+
+message HealthResponse {
+  string status = 1;
+  string database = 2;
+}
+
+message ProductInput {
+  string pname = 1;
+  string price = 2;
+  int32 quantity = 3;
+}
+
+message ProductId {
+  int32 pid = 1;
+}
+
+message ProductResponse {
+  int32 pid = 1;
+  string pname = 2;
+  string price = 3;
+  int32 quantity = 4;
+}
+
+message ListProductsRequest {
+  int32 page = 1;
+  int32 pageSize = 2;
+}
+
+message ListProductsResponse {
+  repeated ProductResponse items = 1;
+  int32 page = 2;
+  int32 pageSize = 3;
+  int32 total = 4;
+}
+
+message UpdateProductRequest {
+  int32 pid = 1;
+  string pname = 2;
+  string price = 3;
+  int32 quantity = 4;
+}
+
+message DeleteProductResponse {
+  int32 pid = 1;
+  string message = 2;
+}
+
+message StockRequest {
+  int32 pid = 1;
+  int32 qty = 2;
+  string reservationId = 3;
+}
+
+message StockResponse {
+  int32 pid = 1;
+  int32 qty = 2;
+  string reservationId = 3;
+  string state = 4;
+  string unit_price = 5;
+}
+
+message StocksRequest {
+  repeated int32 pids = 1;
+}
+
+message StockItem {
+  int32 pid = 1;
+  int32 quantity = 2;
+}
+
+message StocksResponse {
+  repeated StockItem items = 1;
+}

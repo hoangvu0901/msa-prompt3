@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS stock_committed_at TIMESTAMPTZ;
+
+COMMIT;

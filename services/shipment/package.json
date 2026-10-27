@@ -1,0 +1,12 @@
+{
+  "name": "@msa-prompt3/shipment-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "@grpc/grpc-js": "1.14.6",
+    "@grpc/proto-loader": "0.8.1",
+    "kafkajs": "2.2.4",
+    "mongodb": "6.21.0"
+  }
+}

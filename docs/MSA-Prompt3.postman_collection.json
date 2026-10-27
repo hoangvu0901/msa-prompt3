@@ -1,0 +1,1119 @@
+{
+  "info": {
+    "name": "MSA Prompt3 - MVP Demo",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Run manually in numbered order. Wait for CONFIRMED and Shipment before continuing. Credentials must be entered locally."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3003",
+      "type": "string"
+    },
+    {
+      "key": "adminUsername",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "staffUsername",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "staffPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "staffToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerUsername",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "membershipName",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "requestId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "uid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "mid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "oid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shipid",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{baseUrl}}/api/health"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "if ([200].includes(pm.response.code)) {",
+              "  pm.test(\"System UP\", () => {",
+              "    pm.expect(pm.response.json().status).to.eql(\"UP\");",
+              "  });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Login admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "if ([200].includes(pm.response.code)) {",
+              "  pm.collectionVariables.set(\"adminToken\", pm.response.json().accessToken);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Login staff",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{staffUsername}}\",\n  \"password\": \"{{staffPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "if ([200].includes(pm.response.code)) {",
+              "  pm.collectionVariables.set(\"staffToken\", pm.response.json().accessToken);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Register new customer",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{baseUrl}}/api/auth/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{customerUsername}}\",\n  \"password\": \"{{customerPassword}}\",\n  \"email\": \"{{customerUsername}}@example.com\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const suffix = pm.variables.replaceIn(\"{{$guid}}\").replace(/-/g, \"\");",
+              "pm.collectionVariables.set(\"customerUsername\", \"demo_\" + suffix);",
+              "pm.collectionVariables.set(\"customerPassword\", \"Demo_\" + suffix);",
+              "pm.collectionVariables.set(\"membershipName\", \"DEMO_\" + suffix);",
+              "pm.collectionVariables.set(\"requestId\", pm.variables.replaceIn(\"{{$guid}}\"));",
+              "for (const key of [\"customerToken\", \"uid\", \"mid\", \"pid\", \"oid\", \"shipid\"]) {",
+              "  pm.collectionVariables.unset(key);",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([201]);",
+              "});",
+              "if ([201].includes(pm.response.code)) {",
+              "  pm.collectionVariables.set(\"uid\", pm.response.json().uid);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Login customer",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{customerUsername}}\",\n  \"password\": \"{{customerPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "if ([200].includes(pm.response.code)) {",
+              "  pm.collectionVariables.set(\"customerToken\", pm.response.json().accessToken);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Customer identity",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{customerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/auth/me"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "if ([200].includes(pm.response.code)) {",
+              "  ",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Admin creates membership score 100",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/memberships",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"mname\": \"{{membershipName}}\",\n  \"score\": 100\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([201]);",
+              "});",
+              "if ([201].includes(pm.response.code)) {",
+              "  pm.collectionVariables.set(\"mid\", pm.response.json().mid);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Admin assigns membership",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/customers/{{uid}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"mid\": {{mid}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "if ([200].includes(pm.response.code)) {",
+              "  ",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Customer reads profile",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{customerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/customers/{{uid}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "if ([200].includes(pm.response.code)) {",
+              "  ",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Admin creates product",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/products",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pname\": \"Demo Product\",\n  \"price\": 150000,\n  \"quantity\": 10\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([201]);",
+              "});",
+              "if ([201].includes(pm.response.code)) {",
+              "  pm.collectionVariables.set(\"pid\", pm.response.json().pid);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 - Customer reads product - send twice to view cache",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{customerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/products/{{pid}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "if ([200].includes(pm.response.code)) {",
+              "  ",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 - Customer cannot create product",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{customerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/products",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pname\": \"Forbidden Product\",\n  \"price\": 1000,\n  \"quantity\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([403]);",
+              "});",
+              "if ([403].includes(pm.response.code)) {",
+              "  ",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 - Create order - same requestId for retries",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{customerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/orders",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"requestId\": \"{{requestId}}\",\n  \"items\": [{\"pid\": {{pid}}, \"qty\": 2}]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200,201,202]);",
+              "});",
+              "if ([200,201,202].includes(pm.response.code)) {",
+              "  pm.collectionVariables.set(\"oid\", pm.response.json().order.oid);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 - Wait for CONFIRMED - resend this request if pending",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{customerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/orders/{{oid}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "if ([200].includes(pm.response.code)) {",
+              "  const order = pm.response.json();",
+              "pm.test(\"Order confirmed and stock committed\", () => {",
+              "  pm.expect(order.status).to.eql(\"CONFIRMED\");",
+              "  pm.expect(order.stock_committed).to.eql(true);",
+              "});",
+              "if (order.status === \"CONFIRMED\") {",
+              "  pm.test(\"Correct discount and total\", () => {",
+              "    pm.expect(order.subtotal).to.eql(\"300000.00\");",
+              "    pm.expect(order.discount).to.eql(\"15000.00\");",
+              "    pm.expect(order.total_amount).to.eql(\"285000.00\");",
+              "  });",
+              "}",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 - Confirmed retry returns same order",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{customerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/orders",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"requestId\": \"{{requestId}}\",\n  \"items\": [{\"pid\": {{pid}}, \"qty\": 2}]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "if ([200].includes(pm.response.code)) {",
+              "  const result = pm.response.json();",
+              "pm.test(\"No duplicate order\", () => {",
+              "  pm.expect(result.created).to.eql(false);",
+              "  pm.expect(String(result.order.oid)).to.eql(",
+              "    String(pm.collectionVariables.get(\"oid\"))",
+              "  );",
+              "});",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 - Changed content with same requestId is rejected",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{customerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/orders",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"requestId\": \"{{requestId}}\",\n  \"items\": [{\"pid\": {{pid}}, \"qty\": 3}]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([409]);",
+              "});",
+              "if ([409].includes(pm.response.code)) {",
+              "  ",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 - Stock is 8 after order and retry",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{customerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/products/{{pid}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "if ([200].includes(pm.response.code)) {",
+              "  pm.test(\"Stock deducted exactly once\", () => {",
+              "    pm.expect(pm.response.json().quantity).to.eql(8);",
+              "  });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 - Wait for Shipment - resend if 404",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{customerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/shipments/by-order/{{oid}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "if ([200].includes(pm.response.code)) {",
+              "  pm.collectionVariables.set(\"shipid\", pm.response.json().shipid);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 - Customer cannot update shipment",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{customerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/shipments/{{shipid}}/status",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"SHIPPING\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([403]);",
+              "});",
+              "if ([403].includes(pm.response.code)) {",
+              "  ",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 - Staff cannot skip SHIPPING",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{staffToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/shipments/{{shipid}}/status",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"DELIVERED\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([409]);",
+              "});",
+              "if ([409].includes(pm.response.code)) {",
+              "  ",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 - Staff starts shipping",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{staffToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/shipments/{{shipid}}/status",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"SHIPPING\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "if ([200].includes(pm.response.code)) {",
+              "  ",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 - Staff completes delivery",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{staffToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/shipments/{{shipid}}/status",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"DELIVERED\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "if ([200].includes(pm.response.code)) {",
+              "  ",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23 - Customer sees DELIVERED",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{customerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/api/shipments/{{shipid}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200]);",
+              "});",
+              "if ([200].includes(pm.response.code)) {",
+              "  pm.test(\"Delivered\", () => {",
+              "    pm.expect(pm.response.json().status).to.eql(\"DELIVERED\");",
+              "  });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24 - Product endpoint requires JWT",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Expected HTTP status\", function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([401]);",
+              "});",
+              "if ([401].includes(pm.response.code)) {",
+              "  ",
+              "}"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

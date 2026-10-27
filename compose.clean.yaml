@@ -1,0 +1,12 @@
+services:
+  api-gateway:
+    ports: !override
+      - "127.0.0.1:3003:3002"
+
+  product-db:
+    environment:
+      PRODUCT_APP_PASSWORD: ${PRODUCT_APP_PASSWORD:?Missing PRODUCT_APP_PASSWORD}
+
+  shipment-db:
+    environment:
+      SHIPMENT_APP_PASSWORD: ${SHIPMENT_APP_PASSWORD:?Missing SHIPMENT_APP_PASSWORD}
